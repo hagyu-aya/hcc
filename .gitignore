@@ -2,3 +2,4 @@
 hcc
 tmp*
 *.sh
+Makefile
