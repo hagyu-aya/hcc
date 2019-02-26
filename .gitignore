@@ -3,3 +3,5 @@ hcc
 tmp*
 *.sh
 Makefile
+.vscode
+.vscode/*

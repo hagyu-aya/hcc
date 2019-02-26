@@ -14,7 +14,31 @@ typedef struct{
 	char *input; // トークン文字列(エラーメッセージ用)
 } Token;
 
-Token tokens[100];
+typedef struct {
+	Token* data;
+	int capacity;
+	int len;
+} Vector;
+
+Vector* new_vector(){
+	Vector* vec = malloc(sizeof(Vector));
+	vec->capacity = 16;
+	vec->data = malloc(sizeof(Token) * 16);
+	vec->len = 0;
+	if(vec->data != NULL) return vec;
+	printf("failed to initialize a vector\n");
+	exit(1);
+}
+
+void vector_push(Vector* vec, Token elem){
+	if(vec->capacity == vec->len){
+		vec->capacity *= 2;
+		vec->data = realloc(vec->data, sizeof(Token) * vec->capacity);
+	}
+	vec->data[vec->len++] = elem;
+}
+
+Vector* tokens;
 int pos = 0;
 
 enum{
@@ -29,7 +53,7 @@ typedef struct Node{
 } Node;
 
 void tokenize(char *p){
-	int i = 0;
+	tokens = new_vector();
 	while(*p){
 		if(isspace(*p)){
 			p++;
@@ -37,32 +61,35 @@ void tokenize(char *p){
 		}
 
 		if(*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')'){
-			tokens[i].type = *p;
-			tokens[i].input = p;
-			i++;
+			Token t;
+			t.type = *p;
+			t.input = p;
+			vector_push(tokens, t);
 			p++;
 			continue;
 		}
 
 		if(isdigit(*p)){
-			tokens[i].type = TK_NUM;
-			tokens[i].input = p;
-			tokens[i].val = strtol(p, &p, 10);
-			i++;
+			Token t;
+			t.type = TK_NUM;
+			t.input = p;
+			t.val = strtol(p, &p, 10);
+			vector_push(tokens, t);
 			continue;
 		}
 
 		fprintf(stderr, "トークナイズできません: %s\n", p);
 		exit(1);
 	}
-
-	tokens[i].type = TK_EOF;
-	tokens[i].input = p;
+	Token t;
+	t.type = TK_EOF;
+	t.input = p;
+	vector_push(tokens, t);
 }
 
 // エラー出力
 void error(char* msg){
-	fprintf(stderr, msg, tokens[pos].input);
+	fprintf(stderr, msg, tokens->data[pos].input);
 	exit(1);
 }
 
@@ -82,7 +109,7 @@ Node* new_node_num(int val){
 }
 
 int consume(int type){
-	if(tokens[pos].type != type) return 0;
+	if(tokens->data[pos].type != type) return 0;
 	pos++;
 	return 1;
 }
@@ -117,7 +144,7 @@ Node* term(void){
 		return node;
 	}
 
-	if(tokens[pos].type == TK_NUM) return new_node_num(tokens[pos++].val);
+	if(tokens->data[pos].type == TK_NUM) return new_node_num(tokens->data[pos++].val);
 	error("数値、演算子、括弧のいずれでもないトークンです: %s");
 }
 
@@ -170,4 +197,5 @@ int main(int argc, char** argv){
 	printf("	pop rax\n");
 	printf("	ret\n");
 	return 0;
+	
 }
